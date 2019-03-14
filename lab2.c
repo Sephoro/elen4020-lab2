@@ -59,6 +59,34 @@ void basicTranspose(int twoD[SIZE][SIZE]){
 
 }
 
+void diagonalTranspose(int twoD[SIZE][SIZE]){
+
+int temp =0;
+
+for(int i=0; i < SIZE; i++){
+ 
+ 	for(int j =0; j < i+1; j++){
+	       
+    
+    if(i==j){
+    
+       //printf("%i and %i ",i,j);
+	  //  printf("\n\n");
+	    
+	    for(int a =i; a < SIZE; a++){
+	          
+	          temp = twoD[i][a];
+	          twoD[i][a] = twoD[a][i];
+		        twoD[a][i] = temp;
+	 
+	          
+	    }
+	    
+    }  
+	 }
+ }
+}
+
 
 int main(){
  
@@ -69,6 +97,7 @@ int main(){
  scanf("%i", &SIZE);
 
  int (*twoD)[SIZE] = malloc(sizeof(int[SIZE][SIZE])); //Two Dimensional Array
+ int (*mat)[SIZE] = malloc(sizeof(int[SIZE][SIZE])); //Two Dimensional Array
  
 
  printf("You entered %i as the size of the 2D matrix\n\n", SIZE);
@@ -80,6 +109,15 @@ int main(){
 
  basicTranspose(twoD);
  print(twoD);
+ 
+ printf("\n\n\n\n");
+ fill2D(mat);
+ print(mat);
+ 
+ printf("Now Transposing AGAIN...\n\n");
+ 
+ diagonalTranspose(mat);
+  print(mat);
 
  return 0;
  }

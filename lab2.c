@@ -1,15 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int SIZE=0;
 
+//generate random nxn matrix
 void fill2D(int twoD[SIZE][SIZE]){
+   
+   int num = 0;
 
    for(int i =0; i < SIZE; i++){
    
       for(int j =0; j < SIZE; j++){
-           
-          twoD[i][j] = (i+1)*(j+i); 
+          
+          num = rand()%20; 
+          twoD[i][j] = num; 
       
          }
    
@@ -18,7 +23,7 @@ void fill2D(int twoD[SIZE][SIZE]){
   }
 
 
-
+//display matrix
 void print(int twoD[SIZE][SIZE]){
 
     for(int i = 0; i <SIZE; i++){
@@ -45,7 +50,6 @@ void basicTranspose(int twoD[SIZE][SIZE]){
  
  	for(int j =0; j < i; j++){
 	       
-
 	        temp = twoD[i][j];
 		twoD[i][j] = twoD[j][i];
 		twoD[j][i] =temp;
@@ -57,8 +61,9 @@ void basicTranspose(int twoD[SIZE][SIZE]){
 
 
 int main(){
-
-// int size = 0;
+ 
+ //generate seed
+ srand(time(0));
 
  printf("Please input size: ");
  scanf("%i", &SIZE);

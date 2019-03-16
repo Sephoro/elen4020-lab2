@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <omp.h>
+#include <sys/time.h>
+#include <string.h>
 
 int SIZE = 0;
 
@@ -120,44 +122,53 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 	}
 }
 
+//A timer function that accepts functions
+void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_transpose){
 
+	struct timeval start, end;
+    
+	//Start timer
+	gettimeofday( &start, NULL );
+    f(twoD);
+    gettimeofday( &end, NULL );
+	//end timer
+    fill2D(twoD);
+
+	double duration = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);fill2D(twoD);
+    printf("%s  t = %g milliseconds\n",type_transpose,  duration*1e3 );
+
+}
 
 int main()
 {
 
 	//generate seed
 	srand(time(0));
+	 
+	//matrix sizes
+	int array[4] = {128, 1024, 2048, 4096};
 
-	printf("Please input size: ");
-	scanf("%i", &SIZE);
+	for(int i = 0; i<4; i++){
 
-	int(*twoD)[SIZE] = malloc(sizeof(int[SIZE][SIZE])); //Two Dimensional Array
-	
-	printf("You entered %i as the size of the 2D matrix\n\n", SIZE);
-
+	SIZE = array[i];
+	int(*twoD)[SIZE] = malloc(sizeof(int[SIZE][SIZE])); 
 	fill2D(twoD);
-	print(twoD);
-
-	printf("Naive basic...\n");
-	NaiveTransposeBasic(twoD);
-	print(twoD);
-
-	printf("\n");
+	printf("---------------------------------%i----------------------------- \n\n", SIZE);
 	
-	printf("Naive OPM...\n");
-	NaiveTransposeOpenMP(twoD);
-	print(twoD);
+	timer(NaiveTransposeBasic,twoD,"Basic Naive-Transposition    ");
+	timer(DiagonalTransposeBasic,twoD,"Basic Diagonal-Transposition ");
+	
+	timer(NaiveTransposeOpenMP,twoD,"OpenMP Naive-Threading       ");
+	timer(DiagonalTransposeOpenMP,twoD,"OpenMP Diagonal-Threading    ");
 
-	printf("\n");
+	printf("\n------------------------------------------------------------------");
 
-	printf("Diagonal basic...\n");
-	DiagonalTransposeBasic(twoD);
-	print(twoD);
+	printf("\n\n");
 
-    printf("\n");
-    printf("Diagonal OPM...\n");
-	DiagonalTransposeOpenMP(twoD);
-	print(twoD);
+	free(twoD);
+
+	}
+	
 
 	return 0;
 }

@@ -73,7 +73,7 @@ void NaiveTransposeOpenMP(int twoD[SIZE][SIZE])
 {
 
 	int temp = 0;
-	omp_set_num_threads(8);
+	omp_set_num_threads(numOfThreads);
 
 #pragma omp parallel 
 {
@@ -114,7 +114,7 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 {
 
 	int temp = 0;
-	omp_set_num_threads(8);
+	omp_set_num_threads(numOfThreads);
 
     #pragma omp parallel
 	{
@@ -209,13 +209,6 @@ void DiagonalTransposePthread(int twoD[SIZE][SIZE])
 
 } 
 
-
-
-
-
-
-
-
 //A timer function that accepts functions
 void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_transpose){
 
@@ -226,9 +219,8 @@ void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_t
     f(twoD);
     gettimeofday( &end, NULL );
 	//end timer
-    fill2D(twoD);
 
-	double duration = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);fill2D(twoD);
+	double duration = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
     printf("%s  t = %g milliseconds\n",type_transpose,  duration*1e3 );
 
 }

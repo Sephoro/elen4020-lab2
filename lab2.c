@@ -75,10 +75,11 @@ void NaiveTransposeOpenMP(int twoD[SIZE][SIZE])
 	int temp = 0;
 	omp_set_num_threads(8);
 
-    #pragma omp parallel for
+#pragma omp parallel 
+{
 	for (int i = 0; i < SIZE; i++)
 	{
-
+        #pragma omp for nowait
 		for (int j = 0; j < i; j++)
 		{
 
@@ -86,6 +87,7 @@ void NaiveTransposeOpenMP(int twoD[SIZE][SIZE])
 			twoD[i][j] = twoD[j][i];
 			twoD[j][i] = temp;
 		}
+	}
 	}
 }
 
@@ -114,9 +116,12 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 	int temp = 0;
 	omp_set_num_threads(8);
 
-    #pragma omp parallel for
+    #pragma omp parallel
+	{
+    
 	for (int i = 0; i < SIZE; i++)
 	{
+		#pragma omp for nowait
 		for (int j = i + 1; j < SIZE; j++)
 		{
 
@@ -124,6 +129,7 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 			twoD[i][j] = twoD[j][i];
 			twoD[j][i] = temp;
 		}
+	}
 	}
 }
 

@@ -4,8 +4,13 @@
 #include <omp.h>
 #include <sys/time.h>
 #include <string.h>
+#include <pthread.h>
 
 int SIZE = 0;
+int nextPosition = 0;
+int numOfThreads = 8;
+
+pthread_mutex_t syncing;
 
 //generate random nxn matrix
 void fill2D(int twoD[SIZE][SIZE])
@@ -122,6 +127,89 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 	}
 }
 
+
+
+
+//Struct for Pthreads
+struct threadInfo
+{
+	int pos;
+	int size;
+	int* Arr;
+}; 
+
+
+//Pthread Diagonal Transpose
+void* pThread_diagonalTranspose(void* thread)
+{
+    
+    
+    struct threadInfo *tInfo = (struct threadInfo *) thread;
+    int SIZE = tInfo->size;
+    
+
+   while(1)
+   { 
+             int temp;
+				    for (int j = tInfo->pos+1; j < SIZE; ++j)
+	          {
+
+					  temp =  *(tInfo->Arr+ SIZE*tInfo->pos +j);
+			      *(tInfo->Arr+ SIZE*tInfo->pos +j) = *(tInfo->Arr+ SIZE*j +tInfo->pos);
+					  *(tInfo->Arr+ SIZE*j +tInfo->pos) = temp;
+				
+	          }
+					
+			       pthread_mutex_lock(&syncing);
+      
+            if(nextPosition < SIZE-1)
+             {
+            
+                tInfo->pos = nextPosition;
+                ++nextPosition;
+            }else tInfo->pos = SIZE-1;
+            pthread_mutex_unlock(&syncing);
+            
+            if (tInfo->pos==SIZE-1) break;
+ 
+    }
+      pthread_exit(NULL);
+}
+
+
+void DiagonalTransposePthread(int twoD[SIZE][SIZE])
+{
+
+	pthread_t threads[numOfThreads];
+	struct threadInfo threadParameters[numOfThreads];
+	nextPosition = numOfThreads;
+	
+	
+	for(int i = 0; i < numOfThreads; i++)
+	{
+		threadParameters[i].size = SIZE;
+		threadParameters[i].pos = i;
+		threadParameters[i].Arr = twoD[0];
+		
+
+		pthread_create (&threads[i], NULL, &pThread_diagonalTranspose,&threadParameters[i]);	
+	}
+
+  	for(int i = 0; i < numOfThreads; i++)
+	{
+		pthread_join (threads[i], NULL);	
+	}
+	
+
+} 
+
+
+
+
+
+
+
+
 //A timer function that accepts functions
 void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_transpose){
 
@@ -139,6 +227,7 @@ void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_t
 
 }
 
+
 int main()
 {
 
@@ -147,6 +236,7 @@ int main()
 	 
 	//matrix sizes
 	int array[4] = {128, 1024, 2048, 4096};
+
 
 	for(int i = 0; i<4; i++){
 
@@ -160,11 +250,14 @@ int main()
 	
 	timer(NaiveTransposeOpenMP,twoD,"OpenMP Naive-Threading       ");
 	timer(DiagonalTransposeOpenMP,twoD,"OpenMP Diagonal-Threading    ");
+	timer(DiagonalTransposePthread,twoD,"Pthread Diagonal-Threading   ");
+	
 
 	printf("\n------------------------------------------------------------------");
 
 	printf("\n\n");
-
+	
+  //Freeing the memory
 	free(twoD);
 
 	}

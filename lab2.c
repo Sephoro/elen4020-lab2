@@ -6,7 +6,8 @@
 #include <string.h>
 #include <pthread.h>
 
-int SIZE = 0;
+int SIZE = 16;
+int BLOCK_SIZE = 4;
 int nextPosition = 0;
 int numOfThreads = 8;
 
@@ -49,46 +50,46 @@ void print(int twoD[SIZE][SIZE])
 	printf("\n");
 }
 
+void *swap(int *a, int *b){
+
+   int temp = *a;
+   *a = *b;
+   *b = temp;
+ }
+
+
 // Basic Naive Transpose
 void NaiveTransposeBasic(int twoD[SIZE][SIZE])
 {
-
-	int temp = 0;
-
 	for (int i = 0; i < SIZE; i++)
 	{
 
 		for (int j = 0; j < i; j++)
 		{
-
-			temp = twoD[i][j];
-			twoD[i][j] = twoD[j][i];
-			twoD[j][i] = temp;
+                        swap(&twoD[i][j], &twoD[j][i]);
+	
 		}
 	}
 }
 
-// Basic Naive Transpose
+// Naive Transpose Open MP
 void NaiveTransposeOpenMP(int twoD[SIZE][SIZE])
 {
 
-	int temp = 0;
-	omp_set_num_threads(numOfThreads);
 
-#pragma omp parallel 
-{
-	for (int i = 0; i < SIZE; i++)
-	{
-        #pragma omp for nowait
+omp_set_num_threads(numOfThreads);
+
+    #pragma omp parallel 
+    {
+	  for (int i = 0; i < SIZE; i++)
+	  {
+                #pragma omp for nowait
 		for (int j = 0; j < i; j++)
 		{
-
-			temp = twoD[i][j];
-			twoD[i][j] = twoD[j][i];
-			twoD[j][i] = temp;
+                     swap(&twoD[i][j], &twoD[j][i]);
 		}
-	}
-	}
+	  }
+     }
 }
 
 //Basic Diagonal Transpose
@@ -101,10 +102,7 @@ void DiagonalTransposeBasic(int twoD[SIZE][SIZE])
 	{
 		for (int j = i + 1; j < SIZE; j++)
 		{
-
-			temp = twoD[i][j];
-			twoD[i][j] = twoD[j][i];
-			twoD[j][i] = temp;
+                    swap(&twoD[i][j], &twoD[j][i]);
 		}
 	}
 }
@@ -124,10 +122,7 @@ void DiagonalTransposeOpenMP(int twoD[SIZE][SIZE])
 		#pragma omp for nowait
 		for (int j = i + 1; j < SIZE; j++)
 		{
-
-			temp = twoD[i][j];
-			twoD[i][j] = twoD[j][i];
-			twoD[j][i] = temp;
+                    swap(&twoD[i][j], &twoD[j][i]);
 		}
 	}
 	}
@@ -209,6 +204,100 @@ void DiagonalTransposePthread(int twoD[SIZE][SIZE])
 
 } 
 
+/** WARNING: BLOCK TRANSPOSITION AHEAD!! **/
+
+//transposing of each element in the block
+void blockElementTranspose(int twoD[SIZE][SIZE]){
+
+   int otherRow = 0;
+   int otherCol = 0;
+
+
+   for(int i = 0; i < SIZE; i+=BLOCK_SIZE){
+   
+     for(int j= 0; j < SIZE; j+=BLOCK_SIZE){
+     
+          for(int k = 0; k < BLOCK_SIZE; k++){
+	  
+	       for(int l = 0; l < k; l++){
+	          
+                    if(i!=j){
+
+                            otherRow =  (i + l);
+                            otherCol =  (j + k);                       
+                             
+                    }
+                    else{
+                    
+                           otherRow = (l + j);
+                           otherCol = (k + i);
+                    }
+
+	            swap(&twoD[k+i][l+j],&twoD[otherRow][otherCol]);
+                
+	          }
+	  
+	    }
+       }
+   
+   }
+
+}
+
+//Swapping of blocks
+void blockSwap(int i, int j, int *arr){
+
+
+   int posA = i*SIZE + j;
+   int posB = j*SIZE + i;
+   
+   //B array? ;)
+   int *brr = arr;
+    arr+=posA;
+    brr+=posB;
+
+   for(int i = 0; i < BLOCK_SIZE; i++){
+        
+        for(int j =0; j < BLOCK_SIZE; j++){
+           
+            swap(arr,brr);
+            
+            arr++;
+            brr++;
+          }
+       
+        arr = arr - BLOCK_SIZE + SIZE;
+        brr = brr - BLOCK_SIZE + SIZE;
+      }
+
+}
+
+//Where blocks are transposed
+void blockTranspose(int twoD[SIZE][SIZE]){
+  
+   for(int i =0; i < SIZE;i+=BLOCK_SIZE){
+      
+      
+      for(int j =0; j < i; j+=BLOCK_SIZE)
+            {
+
+               blockSwap(i,j, twoD[0]);
+
+            }
+
+    }
+}
+
+//Basic Block Transposition
+void BlockTransposeBasic(int twoD[SIZE][SIZE]){
+
+    blockElementTranspose(twoD);
+    blockTranspose(twoD);
+ }
+
+
+
+
 //A timer function that accepts functions
 void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_transpose){
 
@@ -216,19 +305,21 @@ void timer(void(*f)(int(*twoD)[(int)(SIZE)]), int twoD[SIZE][SIZE], char *type_t
     
 	//Start timer
 	gettimeofday( &start, NULL );
-    f(twoD);
-    gettimeofday( &end, NULL );
-	//end timer
 
+           f(twoD);
+        
+        //end timer
+        gettimeofday( &end, NULL );
+	
 	double duration = (end.tv_sec - start.tv_sec) + 1.0e-6 * (end.tv_usec - start.tv_usec);
-    printf("%s  t = %g milliseconds\n",type_transpose,  duration*1e3 );
+        printf("%s  t = %g milliseconds\n",type_transpose,  duration*1e3 );
 
 }
 
 
 int main()
 {
-
+        
 	//generate seed
 	srand(time(0));
 	 
@@ -243,19 +334,21 @@ int main()
 	fill2D(twoD);
 	printf("---------------------------------%i----------------------------- \n\n", SIZE);
 	
+        //Naive
 	timer(NaiveTransposeBasic,twoD,"Basic Naive-Transposition    ");
-	timer(DiagonalTransposeBasic,twoD,"Basic Diagonal-Transposition ");
-	
-	timer(NaiveTransposeOpenMP,twoD,"OpenMP Naive-Threading       ");
+        timer(NaiveTransposeOpenMP,twoD,"OpenMP Naive-Threading       ");
+	//Diagonal
+        timer(DiagonalTransposeBasic,twoD,"Basic Diagonal-Transposition ");
 	timer(DiagonalTransposeOpenMP,twoD,"OpenMP Diagonal-Threading    ");
 	timer(DiagonalTransposePthread,twoD,"Pthread Diagonal-Threading   ");
-	
-
-	printf("\n------------------------------------------------------------------");
+        //Block
+        timer(BlockTransposeBasic,twoD,"Basic Block-Transposition    ");
+      
+        printf("\n------------------------------------------------------------------");
 
 	printf("\n\n");
-	
-  //Freeing the memory
+
+        //Freeing the memory
 	free(twoD);
 
 	}

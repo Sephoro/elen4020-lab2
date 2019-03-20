@@ -296,6 +296,77 @@ void BlockTransposeBasic(int twoD[SIZE][SIZE]){
     blockTranspose(twoD);
  }
 
+ //-----------------OpenMP Block THreading----------------
+
+//OpeMP Block Element TRanspose
+void OMPblockElementTranspose(int twoD[SIZE][SIZE]){
+
+   int otherRow = 0;
+   int otherCol = 0;
+
+   omp_set_num_threads(8);
+
+   #pragma omp parallel for private(otherRow, otherCol) shared(twoD) 
+        for(int i = 0; i < SIZE; i+=BLOCK_SIZE){
+    
+             
+             for(int j= 0; j < SIZE; j+=BLOCK_SIZE){
+     
+                
+                for(int k = 0; k < BLOCK_SIZE; k++){
+	                
+	                for(int l = 0; l < k; l++){
+	          
+                         if(i!=j){
+
+                            otherRow =  (i + l);
+                            otherCol =  (j + k);                       
+                             
+                          }
+                        else{
+                    
+                           otherRow = (l + j);
+                           otherCol = (k + i);
+                        }
+
+	                    swap(&twoD[k+i][l+j],&twoD[otherRow][otherCol]);
+                
+	                } 
+	  
+	            }
+            }
+   
+         }
+   
+
+}
+
+//OpenMP Block transpose
+void OMPblockTranspose(int twoD[SIZE][SIZE]){
+
+    omp_set_num_threads(8);
+
+   #pragma omp parallel 
+  
+   for(int i =0; i < SIZE;i+=BLOCK_SIZE){
+      
+     #pragma omp for nowait
+      for(int j =0; j < i; j+=BLOCK_SIZE)
+            {
+
+               blockSwap(i,j, twoD[0]);
+
+            }
+
+    }
+}
+
+//OpenMP Block Transposition
+void OMPBlockTransposeBasic(int twoD[SIZE][SIZE]){
+
+    OMPblockElementTranspose(twoD);
+    OMPblockTranspose(twoD);
+ }
 
 /** PTHREADS BLOCK TRANSPOSITION AHEAD **/
 
@@ -507,7 +578,8 @@ int main()
 	timer(DiagonalTransposePthread,twoD,"Pthread Diagonal-Threading   ");
         //Block
         timer(BlockTransposeBasic,twoD,"Basic Block-Transposition    ");
-	timer(BlockTransposePthread,twoD,"Pthread Block-Transposition  ");
+				timer(OMPBlockTransposeBasic,twoD,"OpenMP Block-Threading       ");
+	timer(BlockTransposePthread,twoD,"Pthread Block-Threading      ");
       
         printf("\n------------------------------------------------------------------");
 
